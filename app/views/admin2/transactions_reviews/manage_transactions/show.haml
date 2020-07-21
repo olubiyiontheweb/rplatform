@@ -71,7 +71,6 @@
             .breakdown-row
               .breakdown-row-left Booking start
               .breakdown-row-right= l pr.start_time
-              -#Sun, May 17, 9:00pm
             .breakdown-row
               .breakdown-row-left Booking end
               .breakdown-row-right= l pr.end_time
@@ -82,7 +81,6 @@
             .breakdown-row
               .breakdown-row-left Booking start
               .breakdown-row-right= l pr.start_on
-              -#Sun, May 17, 9:00pm
             .breakdown-row
               .breakdown-row-left Booking end
               - if pr.unit_type == :day
@@ -129,110 +127,113 @@
         .breakdown-total-price= MoneyViewUtils.to_humanized(pr.seller_gets)
 
       .breakdown-detailed
-        .breakdown-row
-          .breakdown-row-left Price per hour
-          .breakdown-row-right $200
-        .breakdown-row
-          .breakdown-row-left Booking start
-          .breakdown-row-right Sun, May 17, 9:00pm
-        .breakdown-row
-          .breakdown-row-left Booking end
-          .breakdown-row-right Sun, May 17, 11:00pm
-        .breakdown-row
-          .breakdown-row-left Booking duration
-          .breakdown-row-right 2 hours
-        %hr/
-        .breakdown-row
-          .breakdown-row-left.breakdown-bolded Subtotal
-          .breakdown-row-right.breakdown-bolded $400
-        .breakdown-row
-          .breakdown-row-left Marketplace commission (20%)
-          .breakdown-row-right -$80
-        %hr/
+        - if pr.booking
+          .breakdown-row
+            .breakdown-row-left
+              - if pr.unit_type == :day
+                = t("transactions.initiate.price_per_day")
+              - elsif pr.unit_type == :night
+                = t("transactions.initiate.price_per_night")
+              - elsif pr.unit_type == :hour
+                = t("transactions.initiate.price_per_hour")
+              - else
+                = t("transactions.initiate.price_per_unit")
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.listing_price)
+          - if pr.booking_per_hour
+            .breakdown-row
+              .breakdown-row-left Booking start
+              .breakdown-row-right= l pr.start_time
+            .breakdown-row
+              .breakdown-row-left Booking end
+              .breakdown-row-right= l pr.end_time
+            .breakdown-row
+              .breakdown-row-left Booking duration
+              .breakdown-row-right= t("transactions.initiate.duration_in_hours", count: pr.duration)
+          - else
+            .breakdown-row
+              .breakdown-row-left Booking start
+              .breakdown-row-right= l pr.start_on
+            .breakdown-row
+              .breakdown-row-left Booking end
+              - if pr.unit_type == :day
+                .breakdown-row-right= l pr.end_on - 1.day
+              - else
+                .breakdown-row-right= l pr.end_on
+            .breakdown-row
+              .breakdown-row-left Booking duration
+              - if pr.unit_type == :day
+                .breakdown-row-right= pluralize(pr.duration, t("listing_conversations.preauthorize.day"), t("listing_conversations.preauthorize.days"))
+              - else
+                .breakdown-row-right= pluralize(pr.duration, t("listing_conversations.preauthorize.night"), t("listing_conversations.preauthorize.nights"))
+        - elsif pr.quantity.present? && pr.localized_unit_type.present?
+          .breakdown-row
+            .breakdown-row-left= t("transactions.price_per_quantity", unit_type: pr.localized_unit_type)
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.listing_price)
+          - if pr.quantity > 1
+            .breakdown-row-left= pr.localized_selector_label || t("transactions.initiate.quantity")
+            .breakdown-row-right= pr.quantity
+        %hr
+        - if pr.subtotal.present?
+          .breakdown-row
+            .breakdown-row-left.breakdown-bolded Subtotal
+            .breakdown-row-right.breakdown-bolded= MoneyViewUtils.to_humanized(pr.subtotal)
+        - if pr.has_provider_fee
+          .breakdown-row
+            .breakdown-row-left= "Marketplace commission (#{transaction.commission_per})"
+            .breakdown-row-right= MoneyViewUtils.to_humanized(-pr.transaction.commission)
+        %hr
         .breakdown-row
           .breakdown-row-left.breakdown-bolded Total
-          .breakdown-row-right.breakdown-total-price $320
+          .breakdown-row-right.breakdown-total-price= MoneyViewUtils.to_humanized(pr.seller_gets)
 
     #marketplace.breakdown-element
       .breakdown-overview
         .breakdown-overview-left
           .breakdown-trigger-show +
           .breakdown-trigger-hide –
-          .breakdown-title Vinty collects:
-        .breakdown-total-price $100
+          .breakdown-title= t("admin2.manage_transactions.marketplace_collects")
+        .breakdown-total-price= MoneyViewUtils.to_humanized(pr.marketplace_collects)
       .breakdown-detailed
-        .breakdown-row
-          .breakdown-row-left Commission from buyer
-          .breakdown-row-right $20
-        .breakdown-row
-          .breakdown-row-left Commission from seller
-          .breakdown-row-right $80
-        %hr/
+        - if pr.has_buyer_fee
+          .breakdown-row
+            .breakdown-row-left Commission from buyer
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.buyer_fee)
+        - if pr.has_provider_fee
+          .breakdown-row
+            .breakdown-row-left Commission from seller
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.fee)
+        %hr
         .breakdown-row
           .breakdown-row-left.breakdown-bolded Total
-          .breakdown-row-right.breakdown-total-price $100
+          .breakdown-row-right.breakdown-total-price= MoneyViewUtils.to_humanized(pr.marketplace_collects)
 %section.transaction-conversation
   .conversation-wrapper
-    %h2 Timeline and conversation (5)
-    .bubble-left
-      .avatar
-        %img{:src => "../assets/avatar-buyer.png"}/
-      .message-container
-        .message
-          Thanks for everything, this was great.
-        .message-timestamp Israel U • Jan 3, 11:25am (UTC)
-    .bubble-right
-      .avatar
-        %img{:src => "../assets/avatar-seller.png"}/
-      .message-container
-        .message
-          Hi Israel! Thanks again for booking my car, I'm glad you enjoyed it a lot.
-          %br/
-          %br/
-          Kevin - Last Chance Garage
-        .message-timestamp Last Chance Garage • Jan 3, 11:22am (UTC)
-    .bubble-action
-      .action-container
-        .action
-          Marked the order as completed. The payment has now been transferred to Last Chance Garage bank account or will be transferred soon.
-        .message-timestamp Israel U • Jan 3, 11:17am (UTC)
-    .bubble-left
-      .avatar
-        %img{:src => "../assets/avatar-buyer.png"}/
-      .message-container
-        .message
-          Donec id elit non mi porta gravida at eget metus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Nullam id dolor id nibh ultricies vehicula ut id elit. Nullam quis risus eget urna mollis ornare vel eu leo. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
-          %br/
-          %br/
-          Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Curabitur blandit tempus porttitor. Nulla vitae elit libero, a pharetra augue.
-        .message-timestamp Israel U • Jan 2, 9:45am (UTC)
-    .bubble-action
-      .action-container
-        .action
-          Accepted the request. Payment is being held by $MARKETPLACE_NAME until the order is marked as completed.
-        .message-timestamp Last Chance Garage • Dec 29, 2019, 9:22am (UTC)
-    .bubble-right
-      .avatar
-        %img{:src => "../assets/avatar-seller.png"}/
-      .message-container
-        .message
-          Maecenas sed diam eget risus varius blandit sit amet non magna. Maecenas sed diam eget risus varius blandit sit amet non magna. Cras mattis consectetur purus sit amet fermentum.
-          %br/
-          %br/
-          Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod.
-        .message-timestamp Last Chance Garage • Dec 29, 2019, 9:15am (UTC)
-    .bubble-left
-      .avatar
-        %img{:src => "../assets/avatar-buyer.png"}/
-      .message-container
-        .message
-          Donec id elit non mi porta gravida at eget metus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Nullam id dolor id nibh ultricies vehicula ut id elit. Nullam quis risus eget urna mollis ornare vel eu leo. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
-        .message-timestamp Israel U • Dec 28, 2019, 8:15pm (UTC)
-    .bubble-action
-      .action-container
-        .action
-          Payment authorized
-        .message-timestamp Israel U • Dec 28, 2019, 8:15am (UTC)
+    %h2= "Timeline and conversation (#{pr.messages_and_actions.size})"
+    = render partial: 'message', collection: pr.messages_and_actions, as: :message_or_action
+    -#.bubble-left
+    -#  .avatar
+    -#    %img{:src => "../assets/avatar-buyer.png"}
+    -#  .message-container
+    -#    .message
+    -#      Thanks for everything, this was great.
+    -#    .message-timestamp Israel U • Jan 3, 11:25am (UTC)
+    -#
+    -#.bubble-right
+    -#  .avatar
+    -#    %img{:src => "../assets/avatar-seller.png"}
+    -#  .message-container
+    -#    .message
+    -#      Hi Israel! Thanks again for booking my car, I'm glad you enjoyed it a lot.
+    -#      %br
+    -#      %br
+    -#      Kevin - Last Chance Garage
+    -#    .message-timestamp Last Chance Garage • Jan 3, 11:22am (UTC)
+    -#
+    -#.bubble-action
+    -#  .action-container
+    -#    .action
+    -#      Marked the order as completed. The payment has now been transferred to Last Chance Garage bank account or will be transferred soon.
+    -#    .message-timestamp Israel U • Jan 3, 11:17am (UTC)
 
 .mobilemenu-overlay
 

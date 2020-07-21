@@ -415,6 +415,7 @@ en:
       waiting_for_fulfill_and_complete: "Waiting for %{provider} to fulfill the order for %{listing_title} and for %{buyer} to mark the order as completed."
       learn_more: "Learn more."
       you_should_investigate: "You should investigate the situation by discussing with both parties and decide to refund or dismiss the dispute. %{learn_more_link}"
+      marketplace_collects: "%{service_name} collects:"
       status_transaction:
         conversation: Conversation
         free: "Free transaction"
