@@ -314,6 +314,18 @@ class Transaction < ApplicationRecord
       .max
   end
 
+  def buyer_commission_per
+    array = [(item_total * (commission_from_buyer / 100.0) unless commission_from_buyer.nil?),
+             (minimum_buyer_fee unless minimum_buyer_fee.nil? || minimum_buyer_fee.zero?)]
+    if array[0].to_f >= array[1].to_f
+      "#{commission_from_buyer}%"
+    elsif array[1].to_f > array[0].to_f
+      Money.new(array[1], item_total.currency)
+    else
+      0
+    end
+  end
+
   def waiting_testimonial_from?(person_id)
     if starter_id == person_id && starter_skipped_feedback
       false

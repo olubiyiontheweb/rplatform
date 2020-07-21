@@ -1,0 +1,310 @@
+- pr = @transactions_presenter
+- transaction = pr.transaction
+- listing_title = transaction.listing_title || t("admin.communities.transactions.not_available")
+- link = link_to_unless(transaction.listing.deleted, listing_title, listing_path(transaction.listing_id)) || listing_title
+- transaction_title = t('admin2.manage_transactions.transaction_for', link: link, transaction_id: transaction.id).html_safe
+
+.content-card-header
+  %a.content-card-header-title{:href => "manage-transactions.php"} ‹ Back to the transactions list
+.content-card-section-container
+  %section.content-card-section
+    %h2
+      = transaction_title
+    .conversation-parties-wrapper
+      .conversation-party
+        %p
+          %span.conversation-role Initiator:
+          - if pr.buyer
+            %img{:src => "../assets/avatar-buyer.png"}
+            = link_to_unless(pr.buyer.deleted, pr.buyer_name, person_path(pr.buyer.username))
+      .conversation-party
+        %p
+          %span.conversation-role Other party:
+          - if pr.provider
+            %img{:src => "../assets/avatar-seller.png"}
+            = link_to_unless(pr.provider.deleted, pr.provider_name, person_path(pr.provider.username))
+
+    = render 'status', transaction: transaction
+
+    - if pr.show_next_step?
+      .transaction-nextsteps
+        %span{:style => "font-weight: 600;"} Next steps:
+        %ul
+          - if pr.preauthorized?
+            %li
+              = t("admin2.manage_transactions.waiting_for_provider_accept_or_reject", provider: link_to_unless(pr.provider.deleted, pr.provider_name, person_path(pr.provider.username))).html_safe
+          - elsif pr.paid?
+            %li
+              = t("admin2.manage_transactions.waiting_for_fulfill_and_complete",
+                provider: link_to_unless(pr.provider.deleted, pr.provider_name, person_path(pr.provider.username)),
+                listing_title: link_to_unless(transaction.listing.deleted, listing_title, listing_path(transaction.listing_id)) || listing_title ,
+                buyer: link_to_unless(pr.buyer.deleted, pr.buyer_name, person_path(pr.buyer.username))).html_safe
+          - elsif pr.disputed?
+            %li
+              - learn_more_link = link_to t('admin2.manage_transactions.learn_more'), "#{APP_CONFIG.knowledge_base_url}/en/articles/1587573", target: '_blank'
+              = t("admin2.manage_transactions.you_should_investigate", learn_more_link: learn_more_link).html_safe
+
+%section.transaction-payment-breakdown
+  .payment-breakdown-wrapper
+    %h2 Payment breakdown
+    #buyer.breakdown-element
+      .breakdown-overview
+        .breakdown-overview-left
+          .breakdown-trigger-show +
+          .breakdown-trigger-hide –
+          .breakdown-title Buyer pays:
+        .breakdown-total-price= MoneyViewUtils.to_humanized(pr.total)
+      .breakdown-detailed
+        - if pr.booking
+          .breakdown-row
+            .breakdown-row-left
+              - if pr.unit_type == :day
+                = t("transactions.initiate.price_per_day")
+              - elsif pr.unit_type == :night
+                = t("transactions.initiate.price_per_night")
+              - elsif pr.unit_type == :hour
+                = t("transactions.initiate.price_per_hour")
+              - else
+                = t("transactions.initiate.price_per_unit")
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.listing_price)
+          - if pr.booking_per_hour
+            .breakdown-row
+              .breakdown-row-left Booking start
+              .breakdown-row-right= l pr.start_time
+              -#Sun, May 17, 9:00pm
+            .breakdown-row
+              .breakdown-row-left Booking end
+              .breakdown-row-right= l pr.end_time
+            .breakdown-row
+              .breakdown-row-left Booking duration
+              .breakdown-row-right= t("transactions.initiate.duration_in_hours", count: pr.duration)
+          - else
+            .breakdown-row
+              .breakdown-row-left Booking start
+              .breakdown-row-right= l pr.start_on
+              -#Sun, May 17, 9:00pm
+            .breakdown-row
+              .breakdown-row-left Booking end
+              - if pr.unit_type == :day
+                .breakdown-row-right= l pr.end_on - 1.day
+              - else
+                .breakdown-row-right= l pr.end_on
+            .breakdown-row
+              .breakdown-row-left Booking duration
+              - if pr.unit_type == :day
+                .breakdown-row-right= pluralize(pr.duration, t("listing_conversations.preauthorize.day"), t("listing_conversations.preauthorize.days"))
+              - else
+                .breakdown-row-right= pluralize(pr.duration, t("listing_conversations.preauthorize.night"), t("listing_conversations.preauthorize.nights"))
+        - elsif pr.quantity.present? && pr.localized_unit_type.present?
+          .breakdown-row
+            .breakdown-row-left= t("transactions.price_per_quantity", unit_type: pr.localized_unit_type)
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.listing_price)
+          - if pr.quantity > 1
+            .breakdown-row-left= pr.localized_selector_label || t("transactions.initiate.quantity")
+            .breakdown-row-right= pr.quantity
+        %hr
+        - if pr.subtotal.present?
+          .breakdown-row
+            .breakdown-row-left.breakdown-bolded Subtotal
+            .breakdown-row-right.breakdown-bolded= MoneyViewUtils.to_humanized(pr.subtotal)
+        - if pr.shipping_price.present?
+          .breakdown-row
+            .breakdown-row-left.breakdown-bolded= t("transactions.initiate.shipping-price")
+            .breakdown-row-right.breakdown-bolded= MoneyViewUtils.to_humanized(pr.shipping_price)
+        - if pr.has_buyer_fee
+          .breakdown-row
+            .breakdown-row-left= "Marketplace commission (#{transaction.buyer_commission_per})"
+            .breakdown-row-right= MoneyViewUtils.to_humanized(pr.buyer_fee)
+        %hr
+        .breakdown-row
+          .breakdown-row-left.breakdown-bolded Total
+          .breakdown-row-right.breakdown-total-price= MoneyViewUtils.to_humanized(pr.total)
+
+    #seller.breakdown-element
+      .breakdown-overview
+        .breakdown-overview-left
+          .breakdown-trigger-show +
+          .breakdown-trigger-hide –
+          .breakdown-title Seller receives:
+        .breakdown-total-price= MoneyViewUtils.to_humanized(pr.seller_gets)
+
+      .breakdown-detailed
+        .breakdown-row
+          .breakdown-row-left Price per hour
+          .breakdown-row-right $200
+        .breakdown-row
+          .breakdown-row-left Booking start
+          .breakdown-row-right Sun, May 17, 9:00pm
+        .breakdown-row
+          .breakdown-row-left Booking end
+          .breakdown-row-right Sun, May 17, 11:00pm
+        .breakdown-row
+          .breakdown-row-left Booking duration
+          .breakdown-row-right 2 hours
+        %hr/
+        .breakdown-row
+          .breakdown-row-left.breakdown-bolded Subtotal
+          .breakdown-row-right.breakdown-bolded $400
+        .breakdown-row
+          .breakdown-row-left Marketplace commission (20%)
+          .breakdown-row-right -$80
+        %hr/
+        .breakdown-row
+          .breakdown-row-left.breakdown-bolded Total
+          .breakdown-row-right.breakdown-total-price $320
+
+    #marketplace.breakdown-element
+      .breakdown-overview
+        .breakdown-overview-left
+          .breakdown-trigger-show +
+          .breakdown-trigger-hide –
+          .breakdown-title Vinty collects:
+        .breakdown-total-price $100
+      .breakdown-detailed
+        .breakdown-row
+          .breakdown-row-left Commission from buyer
+          .breakdown-row-right $20
+        .breakdown-row
+          .breakdown-row-left Commission from seller
+          .breakdown-row-right $80
+        %hr/
+        .breakdown-row
+          .breakdown-row-left.breakdown-bolded Total
+          .breakdown-row-right.breakdown-total-price $100
+%section.transaction-conversation
+  .conversation-wrapper
+    %h2 Timeline and conversation (5)
+    .bubble-left
+      .avatar
+        %img{:src => "../assets/avatar-buyer.png"}/
+      .message-container
+        .message
+          Thanks for everything, this was great.
+        .message-timestamp Israel U • Jan 3, 11:25am (UTC)
+    .bubble-right
+      .avatar
+        %img{:src => "../assets/avatar-seller.png"}/
+      .message-container
+        .message
+          Hi Israel! Thanks again for booking my car, I'm glad you enjoyed it a lot.
+          %br/
+          %br/
+          Kevin - Last Chance Garage
+        .message-timestamp Last Chance Garage • Jan 3, 11:22am (UTC)
+    .bubble-action
+      .action-container
+        .action
+          Marked the order as completed. The payment has now been transferred to Last Chance Garage bank account or will be transferred soon.
+        .message-timestamp Israel U • Jan 3, 11:17am (UTC)
+    .bubble-left
+      .avatar
+        %img{:src => "../assets/avatar-buyer.png"}/
+      .message-container
+        .message
+          Donec id elit non mi porta gravida at eget metus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Nullam id dolor id nibh ultricies vehicula ut id elit. Nullam quis risus eget urna mollis ornare vel eu leo. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
+          %br/
+          %br/
+          Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Curabitur blandit tempus porttitor. Nulla vitae elit libero, a pharetra augue.
+        .message-timestamp Israel U • Jan 2, 9:45am (UTC)
+    .bubble-action
+      .action-container
+        .action
+          Accepted the request. Payment is being held by $MARKETPLACE_NAME until the order is marked as completed.
+        .message-timestamp Last Chance Garage • Dec 29, 2019, 9:22am (UTC)
+    .bubble-right
+      .avatar
+        %img{:src => "../assets/avatar-seller.png"}/
+      .message-container
+        .message
+          Maecenas sed diam eget risus varius blandit sit amet non magna. Maecenas sed diam eget risus varius blandit sit amet non magna. Cras mattis consectetur purus sit amet fermentum.
+          %br/
+          %br/
+          Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod.
+        .message-timestamp Last Chance Garage • Dec 29, 2019, 9:15am (UTC)
+    .bubble-left
+      .avatar
+        %img{:src => "../assets/avatar-buyer.png"}/
+      .message-container
+        .message
+          Donec id elit non mi porta gravida at eget metus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Nullam id dolor id nibh ultricies vehicula ut id elit. Nullam quis risus eget urna mollis ornare vel eu leo. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
+        .message-timestamp Israel U • Dec 28, 2019, 8:15pm (UTC)
+    .bubble-action
+      .action-container
+        .action
+          Payment authorized
+        .message-timestamp Israel U • Dec 28, 2019, 8:15am (UTC)
+
+.mobilemenu-overlay
+
+#transactionMarkAsCompletedModal.modal{"aria-hidden" => "true", "aria-labelledby" => "transactionMarkAsCompletedLabel", "data-backdrop" => "static", :role => "dialog", :tabindex => "-1"}
+  .modal-dialog{:role => "document"}
+    .modal-content
+      .modal-header
+        %h2#transactionMarkAsCompletedLabel.modal-title Mark the transaction as completed
+        %button.close{"aria-label" => "Close", "data-dismiss" => "modal", :type => "button"}
+          %span{"aria-hidden" => "true"} ×
+      .modal-body
+        If both parties confirmed that everything went well, you can mark the transaction #509535 as completed. This cannot be undone.
+      .modal-footer
+        %a.cancel-modal{"data-dismiss" => "modal", :href => "#"} Cancel
+        %button.btn.btn-primary{:type => "button"} Mark as completed
+#transactionDisputeModal.modal{"aria-hidden" => "true", "aria-labelledby" => "transactionDisputeModalLabel", "data-backdrop" => "static", :role => "dialog", :tabindex => "-1"}
+  .modal-dialog{:role => "document"}
+    .modal-content
+      .modal-header
+        %h2#transactionDisputeModalLabel.modal-title Dispute the transaction
+        %button.close{"aria-label" => "Close", "data-dismiss" => "modal", :type => "button"}
+          %span{"aria-hidden" => "true"} ×
+      .modal-body
+        Sometimes, things can go wrong. If the buyer has reported some issues, you can dispute the transaction #509535. This cannot be undone.
+      .modal-footer
+        %a.cancel-modal{"data-dismiss" => "modal", :href => "#"} Cancel
+        %button.btn.btn-primary{:type => "button"} Dispute the transaction
+
+
+:javascript
+    jQuery(function(){
+
+       $("#managetransactions, #managetransactions-mobile").addClass("active");
+       $("#transactionsreviews, #transactionsreviews-mobile").addClass("show");
+    });
+
+  $('#buyer .breakdown-detailed, #buyer .breakdown-trigger-hide').hide();
+
+  $("#buyer .breakdown-trigger-show").click(function(){
+    $("#buyer .breakdown-detailed, #buyer .breakdown-trigger-hide").show();
+    $("#buyer .breakdown-trigger-show, #buyer .breakdown-overview .breakdown-total-price").hide();
+  });
+
+  $("#buyer .breakdown-trigger-hide").click(function(){
+    $("#buyer .breakdown-detailed, #buyer .breakdown-trigger-hide").hide();
+    $("#buyer .breakdown-trigger-show, #buyer .breakdown-overview .breakdown-total-price").show();
+  });
+
+
+  // Show and hide the seller pricing breakdown
+
+  $('#seller .breakdown-detailed, #seller .breakdown-trigger-hide').hide();
+
+  $("#seller .breakdown-trigger-show").click(function(){
+    $("#seller .breakdown-detailed, #seller .breakdown-trigger-hide").show();
+    $("#seller .breakdown-trigger-show, #seller .breakdown-overview .breakdown-total-price").hide();
+  });
+
+  $("#seller .breakdown-trigger-hide").click(function(){
+    $("#seller .breakdown-detailed, #seller .breakdown-trigger-hide").hide();
+    $("#seller .breakdown-trigger-show, #seller .breakdown-overview .breakdown-total-price").show();
+  });
+
+
+  $('#marketplace .breakdown-detailed, #marketplace .breakdown-trigger-hide').hide();
+
+  $("#marketplace .breakdown-trigger-show").click(function(){
+    $("#marketplace .breakdown-detailed, #marketplace .breakdown-trigger-hide").show();
+    $("#marketplace .breakdown-trigger-show, #marketplace .breakdown-overview .breakdown-total-price").hide();
+  });
+
+  $("#marketplace .breakdown-trigger-hide").click(function(){
+    $("#marketplace .breakdown-detailed, #marketplace .breakdown-trigger-hide").hide();
+    $("#marketplace .breakdown-trigger-show, #marketplace .breakdown-overview .breakdown-total-price").show();
+  });

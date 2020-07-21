@@ -4,6 +4,8 @@ module Admin2::TransactionsReviews
 
     def index; end
 
+    def show; end
+
     def export
       @export_result = ExportTaskResult.create
       Delayed::Job.enqueue(ExportTransactionsJob.new(@current_user.id, @current_community.id, @export_result.id))
