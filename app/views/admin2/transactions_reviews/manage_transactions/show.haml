@@ -209,7 +209,7 @@
 %section.transaction-conversation
   .conversation-wrapper
     %h2= "Timeline and conversation (#{pr.messages_and_actions.size})"
-    = render partial: 'message', collection: pr.messages_and_actions, as: :message_or_action
+    = render partial: 'message', collection: pr.messages_and_actions, as: :message_or_action, locals: { starter: pr.buyer }
     -#.bubble-left
     -#  .avatar
     -#    %img{:src => "../assets/avatar-buyer.png"}
@@ -281,9 +281,6 @@
     $("#buyer .breakdown-detailed, #buyer .breakdown-trigger-hide").hide();
     $("#buyer .breakdown-trigger-show, #buyer .breakdown-overview .breakdown-total-price").show();
   });
-
-
-  // Show and hide the seller pricing breakdown
 
   $('#seller .breakdown-detailed, #seller .breakdown-trigger-hide').hide();
 
