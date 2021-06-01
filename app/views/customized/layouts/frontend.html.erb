@@ -26,7 +26,7 @@
 
 
   <% if FeatureFlagHelper.feature_enabled?(:topbar_v1) %>
-  <% if(search_mode != :keyword || @view_type.eql?("map")) %>
+  <% if(search_mode != :keyword) %>
     <% maps_key = MarketplaceHelper.google_maps_key(@current_community.id) %>
     <% key_param = maps_key ? "&key=#{maps_key}" : "" %>
     <%= javascript_include_tag "//maps.googleapis.com/maps/api/js?libraries=places#{key_param}" %>
