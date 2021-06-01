@@ -1,0 +1,2 @@
+module Customized::HomeHelper
+end

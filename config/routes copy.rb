@@ -1,6 +1,6 @@
 # coding: utf-8
 Rails.application.routes.draw do
-  
+
   namespace :mercury do
     resources :images
   end
@@ -75,104 +75,22 @@ Rails.application.routes.draw do
   locale_matcher_anchored = Regexp.new("^(#{locale_regex_string})$")
 
   # Conditional routes for custom landing pages
-  get '/:locale/' => 'customized/home#index', as: :landing_page_with_locale
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  get '/' => 'customized/home#index', as: :landing_page_without_locale
-
-  get '/:locale/s' => 'customized/search#index', as: :search_with_locale
-
-  get '/s' => 'customized/search#index', as: :search_without_locale
-
-  # get '/:locale/' => 'customized/home#index', as: :landing_page_with_locale, constraints: ->(request) {
-  #   locale_matcher_anchored.match(request.params["locale"]) &&
-  #     CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
-  # }
-  # get '/' => 'customized/home#index', as: :landing_page_without_locale, constraints: ->(request) {
-  #   CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
-  # }
+  get '/:locale/' => 'landing_page#index', as: :landing_page_with_locale, constraints: ->(request) {
+    locale_matcher_anchored.match(request.params["locale"]) &&
+      CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
+  }
+  get '/' => 'landing_page#index', as: :landing_page_without_locale, constraints: ->(request) {
+    CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
+  }
 
   # Conditional routes for search view if landing page is enabled
-  # get '/:locale/s' => 'homepage#index', as: :search_with_locale, constraints: ->(request) {
-  #   locale_matcher_anchored.match(request.params["locale"]) &&
-  #     CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
-  # }
-  # get '/s' => 'homepage#index', as: :search_without_locale, constraints: ->(request) {
-  #   CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
-  # }
+  get '/:locale/s' => 'homepage#index', as: :search_with_locale, constraints: ->(request) {
+    locale_matcher_anchored.match(request.params["locale"]) &&
+      CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
+  }
+  get '/s' => 'homepage#index', as: :search_without_locale, constraints: ->(request) {
+    CustomLandingPage::LandingPageStore.enabled?(request.env[:current_marketplace]&.id)
+  }
 
   # Default routes for homepage, these are matched if custom landing page is not in use
   # Inside this constraits are the routes that are used when request has subdomain other than www

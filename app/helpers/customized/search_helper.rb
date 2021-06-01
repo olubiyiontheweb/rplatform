@@ -1,0 +1,2 @@
+module Customized::SearchHelper
+end
