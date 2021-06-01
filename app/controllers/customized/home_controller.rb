@@ -1,5 +1,5 @@
 class Customized::HomeController < ApplicationController
-  layout false
+  layout "customized/layouts/frontend"
   
   def index
     render "index"

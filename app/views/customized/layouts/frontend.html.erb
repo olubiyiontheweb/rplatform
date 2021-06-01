@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <%= render :partial => 'layouts/head' %>
+
+  <body>
+
+<div id="sidewinder-wrapper">
+
+<% # Render railsContext here before any react component gets rendered %>
+<%= prepend_render_rails_context("") %>
+<% is_homepage = params[:controller] == "homepage" && params[:action] == "index" %>
+<noscript>
+  <div class="noscript-padding"></div>
+  <% # Noscript content will be positioned here %>
+</noscript>
+
+
+  <% if display_onboarding_topbar? %>
+  <% props = onboarding_topbar_props %>
+  <% unless props[:next_step] == :all_done %>
+    <% react_component_cache(name: "onboarding_topbar", props: props) do %>
+      <% react_component("OnboardingTopBar", props: props, prerender: true) %>
+    <% end %>
+  <% end %>
+<% end %>
+
+
+  <% if FeatureFlagHelper.feature_enabled?(:topbar_v1) %>
+  <% if(search_mode != :keyword || @view_type.eql?("map")) %>
+    <% maps_key = MarketplaceHelper.google_maps_key(@current_community.id) %>
+    <% key_param = maps_key ? "&key=#{maps_key}" : "" %>
+    <%= javascript_include_tag "//maps.googleapis.com/maps/api/js?libraries=places#{key_param}" %>
+  <% end %>
+  <% if(@view_type.eql?("map")) %>
+    <%= javascript_include_tag "markerclusterer.js" %>
+  <% end %>
+  <% props = topbar_props %>
+<% end %>
+
+
+  <% if @custom_footer.try(:display?) %>
+  <%= render 'layouts/footer' %>
+<% end %>
+
+<% # Most of the JavaScript should be for performance reasons at the end of the body %>
+<% # load Facebook SDK for the whole page %>
+<%= render :partial => "layouts/facebook_sdk" %>
+
+<% # Initialize global I18n variable and load translations there %>
+
+  <script>
+  
+   window.I18n = {};
+
+</script>
+
+<%= javascript_include_tag "i18n/#{I18n.locale}" %>
+<%= javascript_include_tag 'application' %>
+
+  <script>
+  
+      $(function() {
+        if ('touchAction' in document.body.style) {
+          document.body.style.touchAction = 'manipulation';
+        } else {
+          window.FastClick.attach(document.body, { excludeNode: '^pac-'} );
+        }
+      });
+
+</script>
+
+
+    <%= yield %>
+
+      
+    <%= render :partial => 'analytics/bottom_scripts' %>
+    
+    <%= render :partial => "layouts/noscript"%>
+
+    </div>
+
+<%= render :partial => 'customized/layouts/footer' %>
+      </body>
+</html>

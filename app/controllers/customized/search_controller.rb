@@ -1,5 +1,5 @@
 class Customized::SearchController < ApplicationController
-  layout false
+  layout "customized/layouts/frontend"
   
   def index
     render "index" 
